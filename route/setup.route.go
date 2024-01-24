@@ -3,13 +3,9 @@ package route
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/muhafs/go-fiber-gorm/controller"
-	"github.com/muhafs/go-fiber-gorm/initializer"
 )
 
 func Setup(app *fiber.App) {
-	// setup static
-	app.Static("/", initializer.Root+"/public/assets")
-
 	// set prefix for api v1
 	v1 := app.Group("/api/v1")
 

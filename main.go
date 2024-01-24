@@ -27,6 +27,9 @@ func main() {
 	// create app
 	app := fiber.New()
 
+	// setup static
+	app.Static("/", initializer.Root+"/public/assets")
+
 	// init routes
 	route.Setup(app)
 
