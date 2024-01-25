@@ -4,7 +4,8 @@ import (
 	"log"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/muhafs/go-fiber-gorm/initializer"
+	"github.com/muhafs/go-fiber-gorm/config"
+	"github.com/muhafs/go-fiber-gorm/database"
 	"github.com/muhafs/go-fiber-gorm/route"
 )
 
@@ -12,14 +13,15 @@ var appURL string
 
 func init() {
 	// load env file data
-	config, err := initializer.LoadConfig(".")
+	config, err := config.LoadEnv(".")
 	if err != nil {
 		log.Fatalln("Failed to load environment variables! \n", err.Error())
 	}
 
 	// connect to database
-	initializer.ConnectDB(&config)
+	database.ConnectDB(&config)
 
+	// set appUrl as global var
 	appURL = config.AppURL
 }
 
@@ -28,7 +30,7 @@ func main() {
 	app := fiber.New()
 
 	// setup static
-	app.Static("/", initializer.Root+"/public/assets")
+	app.Static("/", config.Root+"/public/assets")
 
 	// init routes
 	route.Setup(app)
