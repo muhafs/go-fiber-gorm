@@ -16,8 +16,6 @@ const (
 	ErrorDuplicate = "username already taken"
 )
 
-var DB = database.DB
-
 func GetListUser(c *fiber.Ctx) error {
 	// extract the page and limit query
 	page := c.Query("page", "1")
@@ -30,7 +28,7 @@ func GetListUser(c *fiber.Ctx) error {
 
 	// fetch user list from database
 	var users []entity.User
-	if err := DB.Limit(intLimit).Offset(offset).Order("name asc").Find(&users).Error; err != nil {
+	if err := database.DB.Limit(intLimit).Offset(offset).Order("name asc").Find(&users).Error; err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"success": false,
 			"message": "couldn't fetch list user: " + err.Error(),
@@ -51,7 +49,7 @@ func GetUser(c *fiber.Ctx) error {
 
 	// get user data from database
 	var user entity.User
-	if err := DB.First(&user, id).Error; err != nil {
+	if err := database.DB.First(&user, id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 				"success": false,
@@ -98,7 +96,7 @@ func CreateUser(c *fiber.Ctx) error {
 	}
 
 	// store user data into database
-	if err := DB.Create(&newUser).Error; err != nil {
+	if err := database.DB.Create(&newUser).Error; err != nil {
 		if strings.Contains(err.Error(), "Duplicate entry") {
 			return c.Status(fiber.StatusConflict).JSON(fiber.Map{
 				"success": false,
@@ -143,7 +141,7 @@ func UpdateUser(c *fiber.Ctx) error {
 
 	// get user data from database by ID
 	var user entity.User
-	if err := DB.First(&user, id).Error; err != nil {
+	if err := database.DB.First(&user, id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 				"success": false,
@@ -164,7 +162,7 @@ func UpdateUser(c *fiber.Ctx) error {
 	}
 
 	// update the database user with payloads
-	if err := DB.Model(&user).Updates(&updatedUser).Error; err != nil {
+	if err := database.DB.Model(&user).Updates(&updatedUser).Error; err != nil {
 		if strings.Contains(err.Error(), "Duplicate entry") {
 			return c.Status(fiber.StatusConflict).JSON(fiber.Map{
 				"success": false,
@@ -191,7 +189,7 @@ func DeleteUser(c *fiber.Ctx) error {
 	id := c.Params("id")
 
 	// delete user from database with the given ID
-	result := DB.Delete(&entity.User{}, id)
+	result := database.DB.Delete(&entity.User{}, id)
 
 	// if there is no record matches, it means there is no user exists
 	if result.RowsAffected == 0 {
