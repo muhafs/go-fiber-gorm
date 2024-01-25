@@ -6,7 +6,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/muhafs/go-fiber-gorm/config"
 	"github.com/muhafs/go-fiber-gorm/database"
-	"github.com/muhafs/go-fiber-gorm/route"
+	"github.com/muhafs/go-fiber-gorm/router"
 )
 
 var appURL string
@@ -33,7 +33,7 @@ func main() {
 	app.Static("/", config.Root+"/public/assets")
 
 	// init routes
-	route.Setup(app)
+	router.Setup(app)
 
 	// start server
 	app.Listen(appURL)
