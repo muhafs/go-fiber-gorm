@@ -36,5 +36,5 @@ func main() {
 	router.Setup(app)
 
 	// start server
-	app.Listen(appURL)
+	log.Fatal(app.Listen(appURL))
 }
