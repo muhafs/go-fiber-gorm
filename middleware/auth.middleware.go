@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/muhafs/go-fiber-gorm/utils"
 )
 
 func Auth(c *fiber.Ctx) error {
@@ -13,18 +14,12 @@ func Auth(c *fiber.Ctx) error {
 	// validate token format
 	tokens := strings.Split(auth, " ")
 	if len(tokens) != 2 || tokens[0] != "Token" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"success": false,
-			"message": "invalid token",
-		})
+		return utils.ErrorJSON(c, fiber.StatusBadRequest, "invalid token")
 	}
 
 	// validate token
 	if tokens[1] != "secret" {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"success": false,
-			"message": "unauthorized",
-		})
+		return utils.ErrorJSON(c, fiber.StatusUnauthorized, "unauthorized")
 	}
 
 	// pass to next

@@ -13,8 +13,9 @@ import (
 )
 
 const (
-	ErrorNotFound  = "User not found"
-	ErrorDuplicate = "email already taken"
+	ErrorNotFound     = "user not found"
+	ErrorDuplicate    = "email already taken"
+	ErrorParsePayload = "couldn't parse payload"
 )
 
 func GetListUser(c *fiber.Ctx) error {
@@ -30,18 +31,11 @@ func GetListUser(c *fiber.Ctx) error {
 	// fetch user list from database
 	var users []entity.User
 	if err := database.DB.Limit(intLimit).Offset(offset).Order("name asc").Find(&users).Error; err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"success": false,
-			"message": "couldn't fetch list user: " + err.Error(),
-		})
+		return utils.ErrorJSON(c, fiber.StatusInternalServerError, "couldn't fetch list user: "+err.Error())
 	}
 
 	// return user list data as JSON
-	return c.JSON(fiber.Map{
-		"success": true,
-		"message": "user list fetched successfully",
-		"data":    users,
-	})
+	return utils.SuccessJSON(c, fiber.StatusOK, "user list fetched successfully", users)
 }
 
 func GetUser(c *fiber.Ctx) error {
@@ -52,73 +46,49 @@ func GetUser(c *fiber.Ctx) error {
 	var user entity.User
 	if err := database.DB.First(&user, id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-				"success": false,
-				"message": ErrorNotFound,
-			})
+			return utils.ErrorJSON(c, fiber.StatusNotFound, ErrorNotFound)
 		}
 
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"success": false,
-			"message": err.Error(),
-		})
+		return utils.ErrorJSON(c, fiber.StatusInternalServerError, err.Error())
 	}
 
 	// return existed user as JSON
-	return c.JSON(fiber.Map{
-		"success": true,
-		"message": "user fetched successfully",
-		"data":    user,
-	})
+	return utils.SuccessJSON(c, fiber.StatusOK, "user fetched successfully", user)
 }
 
 func CreateUser(c *fiber.Ctx) error {
 	// extract user data from request / JSON
 	payload := new(request.User)
 	if err := c.BodyParser(payload); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"success": false,
-			"message": "couldn't parse payload from request: " + err.Error(),
-		})
+		return utils.ErrorJSON(c, fiber.StatusBadRequest, ErrorParsePayload)
 	}
 
 	// run validator
 	if vErr := request.Validate[request.User](*payload); vErr != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"success": false,
-			"message": vErr,
-		})
+		return utils.ErrorJSON(c, fiber.StatusBadRequest, vErr)
 	}
 
-	pass, _ := utils.HashPassword(payload.Password)
+	// hash password before push to database
+	hashedPassword, _ := utils.HashPassword(payload.Password)
+
 	// assign valid data as entity
 	newUser := entity.User{
 		Name:     payload.Name,
 		Email:    payload.Email,
-		Password: pass,
+		Password: hashedPassword,
 	}
 
 	// store user data into database
 	if err := database.DB.Create(&newUser).Error; err != nil {
 		if strings.Contains(err.Error(), "Duplicate entry") {
-			return c.Status(fiber.StatusConflict).JSON(fiber.Map{
-				"success": false,
-				"message": ErrorDuplicate,
-			})
+			return utils.ErrorJSON(c, fiber.StatusConflict, ErrorDuplicate)
 		}
 
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"success": false,
-			"message": "couldn't create user: " + err.Error(),
-		})
+		return utils.ErrorJSON(c, fiber.StatusInternalServerError, "couldn't create user: "+err.Error())
 	}
 
 	// return stored data as JSON
-	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
-		"success": true,
-		"message": "user created successfully",
-		"data":    newUser,
-	})
+	return utils.SuccessJSON(c, fiber.StatusCreated, "user created successfully", newUser)
 }
 
 func UpdateUser(c *fiber.Ctx) error {
@@ -128,65 +98,45 @@ func UpdateUser(c *fiber.Ctx) error {
 	// extract user data from request / JSON
 	payload := new(request.User)
 	if err := c.BodyParser(payload); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"success": false,
-			"message": "couldn't parse payload from request: " + err.Error(),
-		})
+		return utils.ErrorJSON(c, fiber.StatusBadRequest, ErrorParsePayload)
 	}
 
 	// run validator
 	if vErr := request.Validate[request.User](*payload); vErr != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"success": false,
-			"message": vErr,
-		})
+		return utils.ErrorJSON(c, fiber.StatusBadRequest, vErr)
 	}
 
 	// get user data from database by ID
 	var user entity.User
 	if err := database.DB.First(&user, id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-				"success": false,
-				"message": ErrorNotFound,
-			})
+			return utils.ErrorJSON(c, fiber.StatusNotFound, ErrorNotFound)
 		}
 
-		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{
-			"success": false,
-			"message": err.Error(),
-		})
+		return utils.ErrorJSON(c, fiber.StatusInternalServerError, err.Error())
 	}
 
+	// hash password before push to database
+	hashedPassword, _ := utils.HashPassword(payload.Password)
+
 	// assign valid data as entity
-	pass, _ := utils.HashPassword(payload.Password)
 	updatedUser := entity.User{
 		Name:     payload.Name,
 		Email:    payload.Email,
-		Password: pass,
+		Password: hashedPassword,
 	}
 
 	// update the database user with payloads
 	if err := database.DB.Model(&user).Updates(&updatedUser).Error; err != nil {
 		if strings.Contains(err.Error(), "Duplicate entry") {
-			return c.Status(fiber.StatusConflict).JSON(fiber.Map{
-				"success": false,
-				"message": ErrorDuplicate,
-			})
+			return utils.ErrorJSON(c, fiber.StatusConflict, ErrorDuplicate)
 		}
 
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"success": false,
-			"message": "couldn't update user: " + err.Error(),
-		})
+		return utils.ErrorJSON(c, fiber.StatusInternalServerError, "couldn't update user: "+err.Error())
 	}
 
 	// return the user updated
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"success": true,
-		"message": "user data updated successfully",
-		"data":    user,
-	})
+	return utils.SuccessJSON(c, fiber.StatusCreated, "user data updated successfully", user)
 }
 
 func DeleteUser(c *fiber.Ctx) error {
@@ -198,20 +148,11 @@ func DeleteUser(c *fiber.Ctx) error {
 
 	// if there is no record matches, it means there is no user exists
 	if result.RowsAffected == 0 {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"success": false,
-			"message": ErrorNotFound,
-		})
+		return utils.ErrorJSON(c, fiber.StatusNotFound, ErrorNotFound)
 	} else if result.Error != nil {
-		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{
-			"success": false,
-			"message": "couldn't delete user: " + result.Error.Error(),
-		})
+		return utils.ErrorJSON(c, fiber.StatusInternalServerError, "couldn't delete user: "+result.Error.Error())
 	}
 
 	// return success message
-	return c.JSON(fiber.Map{
-		"success": true,
-		"message": "user deleted successfully",
-	})
+	return utils.SuccessJSON(c, fiber.StatusOK, "user deleted successfully", true)
 }
