@@ -83,7 +83,7 @@ func CreateUser(c *fiber.Ctx) error {
 	}
 
 	// run validator
-	if vErr := payload.Validate(); vErr != nil {
+	if vErr := request.Validate[request.User](*payload); vErr != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"success": false,
 			"message": vErr,
@@ -135,7 +135,7 @@ func UpdateUser(c *fiber.Ctx) error {
 	}
 
 	// run validator
-	if vErr := payload.Validate(); vErr != nil {
+	if vErr := request.Validate[request.User](*payload); vErr != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"success": false,
 			"message": vErr,
