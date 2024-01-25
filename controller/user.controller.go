@@ -8,12 +8,13 @@ import (
 	"github.com/muhafs/go-fiber-gorm/database"
 	"github.com/muhafs/go-fiber-gorm/model/entity"
 	"github.com/muhafs/go-fiber-gorm/model/request"
+	"github.com/muhafs/go-fiber-gorm/utils"
 	"gorm.io/gorm"
 )
 
 const (
 	ErrorNotFound  = "User not found"
-	ErrorDuplicate = "username already taken"
+	ErrorDuplicate = "email already taken"
 )
 
 func GetListUser(c *fiber.Ctx) error {
@@ -89,10 +90,12 @@ func CreateUser(c *fiber.Ctx) error {
 		})
 	}
 
+	pass, _ := utils.HashPassword(payload.Password)
 	// assign valid data as entity
 	newUser := entity.User{
 		Name:     payload.Name,
-		Username: payload.Username,
+		Email:    payload.Email,
+		Password: pass,
 	}
 
 	// store user data into database
@@ -156,9 +159,11 @@ func UpdateUser(c *fiber.Ctx) error {
 	}
 
 	// assign valid data as entity
+	pass, _ := utils.HashPassword(payload.Password)
 	updatedUser := entity.User{
 		Name:     payload.Name,
-		Username: payload.Username,
+		Email:    payload.Email,
+		Password: pass,
 	}
 
 	// update the database user with payloads
