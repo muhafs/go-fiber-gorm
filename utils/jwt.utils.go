@@ -25,18 +25,38 @@ func CreateToken(user *entity.User) (string, error) {
 	return tokenString, nil
 }
 
-func VerifyToken(tokenString string) error {
+func VerifyToken(tokenString string) (*jwt.Token, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		// Don't forget to validate the alg is what you expect:
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+		}
+
+		// secretKey is a []byte containing your secret, e.g. []byte("my_secret_key")
 		return secretKey, nil
 	})
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if !token.Valid {
-		return fmt.Errorf("invalid token")
+		return nil, fmt.Errorf("invalid token")
 	}
 
-	return nil
+	return token, nil
+}
+
+func DecodeToken(tokenString string) (jwt.MapClaims, error) {
+	token, err := VerifyToken(tokenString)
+	if err != nil {
+		return nil, err
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok || !token.Valid {
+		return nil, fmt.Errorf("invalid token")
+	}
+
+	return claims, nil
 }
