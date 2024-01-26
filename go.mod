@@ -8,7 +8,9 @@ require (
 	github.com/spf13/viper v1.18.2
 	gorm.io/driver/mysql v1.5.2
 	gorm.io/gorm v1.25.5
+	github.com/golang-jwt/jwt/v5 v5.2.0
 )
+
 
 require (
 	github.com/andybalholm/brotli v1.0.5 // indirect
