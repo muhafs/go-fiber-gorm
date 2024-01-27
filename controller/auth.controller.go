@@ -20,9 +20,10 @@ func SignIn(c *fiber.Ctx) error {
 		return utils.ErrorJSON(c, fiber.StatusBadRequest, "couldn't parse payload from request: "+err.Error())
 	}
 
-	// run validator
-	if vErr := request.Validate[request.SignInRequest](*payload); vErr != nil {
-		return utils.ErrorJSON(c, fiber.StatusBadRequest, vErr)
+	// Validate fields.
+	validate := utils.NewValidator()
+	if err := validate.Struct(payload); err != nil {
+		return utils.ErrorJSON(c, fiber.StatusBadRequest, utils.ValidatorErrors(err))
 	}
 
 	// get user data from database

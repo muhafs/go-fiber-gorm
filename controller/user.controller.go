@@ -63,9 +63,10 @@ func CreateUser(c *fiber.Ctx) error {
 		return utils.ErrorJSON(c, fiber.StatusBadRequest, ErrorParsePayload)
 	}
 
-	// run validator
-	if vErr := request.Validate[request.User](*payload); vErr != nil {
-		return utils.ErrorJSON(c, fiber.StatusBadRequest, vErr)
+	// Validate fields.
+	validate := utils.NewValidator()
+	if err := validate.Struct(payload); err != nil {
+		return utils.ErrorJSON(c, fiber.StatusBadRequest, utils.ValidatorErrors(err))
 	}
 
 	// hash password before push to database
@@ -108,9 +109,10 @@ func UpdateUser(c *fiber.Ctx) error {
 		return utils.ErrorJSON(c, fiber.StatusBadRequest, ErrorParsePayload)
 	}
 
-	// run validator
-	if vErr := request.Validate[request.User](*payload); vErr != nil {
-		return utils.ErrorJSON(c, fiber.StatusBadRequest, vErr)
+	// Validate fields.
+	validate := utils.NewValidator()
+	if err := validate.Struct(payload); err != nil {
+		return utils.ErrorJSON(c, fiber.StatusBadRequest, utils.ValidatorErrors(err))
 	}
 
 	// get user data from database by ID
