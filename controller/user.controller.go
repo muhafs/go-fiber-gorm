@@ -71,11 +71,18 @@ func CreateUser(c *fiber.Ctx) error {
 	// hash password before push to database
 	hashedPassword, _ := utils.HashPassword(payload.Password)
 
+	// store image file if exists into the given destination
+	nameOrNull, err := utils.StoreFile(c, "avatar", "public/avatars")
+	if err != nil {
+		return utils.ErrorJSON(c, fiber.StatusInternalServerError, "Couldn't store the file into disk: "+err.Error())
+	}
+
 	// assign valid data as entity
 	newUser := entity.User{
 		Name:     payload.Name,
 		Email:    payload.Email,
 		Password: hashedPassword,
+		Avatar:   nameOrNull,
 	}
 
 	// store user data into database
@@ -119,11 +126,18 @@ func UpdateUser(c *fiber.Ctx) error {
 	// hash password before push to database
 	hashedPassword, _ := utils.HashPassword(payload.Password)
 
+	// store image file if exists into the given destination
+	nameOrNull, err := utils.StoreFile(c, "avatar", "public/avatars")
+	if err != nil {
+		return utils.ErrorJSON(c, fiber.StatusInternalServerError, "Couldn't store the file into disk: "+err.Error())
+	}
+
 	// assign valid data as entity
 	updatedUser := entity.User{
 		Name:     payload.Name,
 		Email:    payload.Email,
 		Password: hashedPassword,
+		Avatar:   nameOrNull,
 	}
 
 	// update the database user with payloads
@@ -143,8 +157,27 @@ func DeleteUser(c *fiber.Ctx) error {
 	// get the ID from the req parameter
 	id := c.Params("id")
 
-	// delete user from database with the given ID
-	result := database.DB.Delete(&entity.User{}, id)
+	// get user data from database
+	var user entity.User
+	if err := database.DB.First(&user, id).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return utils.ErrorJSON(c, fiber.StatusNotFound, ErrorNotFound)
+		}
+
+		return utils.ErrorJSON(c, fiber.StatusInternalServerError, err.Error())
+	}
+
+	// check if user has image
+	if user.Avatar.Valid {
+		// if has an image then fetch the name of image
+		err := utils.RemoveImage("public/avatars", user.Avatar.String)
+		if err != nil {
+			return utils.ErrorJSON(c, fiber.StatusInternalServerError, "couldn't remove user avatar from disk: "+err.Error())
+		}
+	}
+
+	// delete user from database
+	result := database.DB.Delete(&user)
 
 	// if there is no record matches, it means there is no user exists
 	if result.RowsAffected == 0 {
