@@ -26,13 +26,13 @@ func init() {
 }
 
 func main() {
-	// create app
+	// create fiber app
 	app := fiber.New()
 
-	// setup static
+	// setup static assets
 	app.Static("/", config.Root+"/public/assets")
 
-	// init routes
+	// setup routing
 	router.Setup(app)
 
 	// start server
