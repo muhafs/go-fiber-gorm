@@ -30,7 +30,7 @@ func main() {
 	app := fiber.New()
 
 	// setup static assets
-	app.Static("/", config.Root+"/public/assets")
+	app.Static("/", config.Root+"/public")
 
 	// setup routing
 	router.Setup(app)
