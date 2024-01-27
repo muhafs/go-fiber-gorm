@@ -82,21 +82,13 @@ func CheckDirectory(dirPath string) error {
 }
 
 func GenerateUniqueName(file *multipart.FileHeader) string {
-	// generate new uuid
-	// eg. "a11-b22-c33-d44"
-	uniqueId := uuid.New()
-
-	// remove "-" from unique id
+	// generate unique string
 	// eg. "a11b22c33d44"
-	convertedID := strings.Replace(uniqueId.String(), "-", "", -1)
+	convertedID := strings.Replace(uuid.New().String(), "-", "", -1)
 
 	// generate unix from current time
 	// eg. "1654041600"
 	currentUnix := time.Now().Unix()
-
-	// concat unix and unique id by "_"
-	// eg. "1654041600_a11b22c33d44"
-	filename := fmt.Sprintf("%v_%s", currentUnix, convertedID)
 
 	// extract image extension from original file filename
 	// eg. "png"
@@ -104,8 +96,8 @@ func GenerateUniqueName(file *multipart.FileHeader) string {
 	fileExt := splitedName[len(splitedName)-1]
 
 	// generate image from filename and extension
-	// eg. "a11b22c33d44.png"
-	return fmt.Sprintf("%s.%s", filename, fileExt)
+	// eg. "1654041600_a11b22c33d44.png"
+	return fmt.Sprintf("%v_%s.%s", currentUnix, convertedID, fileExt)
 }
 
 func RemoveImage(dirPath, fileImage string) error {
